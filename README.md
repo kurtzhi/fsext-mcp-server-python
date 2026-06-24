@@ -90,12 +90,38 @@ uv run -m fsext --lock-root /your/workspace/path
 ```bash
 uv run -m fsext --transport sse --host 0.0.0.0 --port 8000
 ```
+##### Access Endpoints
+1. SSE long stream receive channel (client subscribe server push messages)
+`http://<host>:<port>/sse`
+2. Client request send channel (call tools, send initialize request)
+`http://<host>:<port>/messages`
+
+##### Client Config (MCP Inspector)
+- Transport type: SSE
+- Connection address fill: `http://127.0.0.1:8000/sse`
+
 
 #### 4\. Official Standard HTTP Remote Transport \(Bidirectional Stream\)
 
 ```bash
 uv run -m fsext --transport http --host 0.0.0.0 --port 8000
 ```
+##### Access Endpoint
+Only single unified bidirectional entry point, no separate /sse or /messages routes:
+`http://<host>:<port>/mcp`
+
+##### Client Config (MCP Inspector)
+- Transport type: Streamable HTTP
+- Connection address fill: `http://127.0.0.1:8000/mcp`
+
+#### Key Differences between SSE Transport & Streamable HTTP Transport
+
+| Feature | SSE (HTTP+SSE) | Streamable HTTP |
+| --- | --- | --- |
+| **Endpoint Architecture** | **Two endpoints**: Requires a POST endpoint for client requests and a GET endpoint for server streams. | **Single endpoint**: Uses the same URL/path for both POST requests and GET streams. |
+| **Communication** | **Unidirectional**: Server pushes events, but clients cannot easily send data back through that same stream. | **Bidirectional (optional)**: Handles normal HTTP responses or seamlessly enables SSE for real-time notifications on the same connection. |
+| **Connection Stability** | prone to session dropouts and connection-loss issues due to complex state management across two endpoints. | Automatically recovers sessions and performs better under high concurrency with lower maintenance costs. |
+| **Current Standard Status** | Deprecated for modern distributed applications. | The modern standard for remote client-server integrations. |
 
 ## Full MCP Tools List
 
