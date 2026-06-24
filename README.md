@@ -38,8 +38,8 @@ It is recommended to use `uv` for fast environment deployment:
 
 ```bash
 # Clone repository
-git clone https://github.com/kurtzhi/FsExt-Mcp-Server
-cd FsExt-Mcp-Server
+git clone https://github.com/kurtzhi/fsext-mcp-server-python
+cd fsext-mcp-server-python
 
 # Install all dependencies
 uv sync
