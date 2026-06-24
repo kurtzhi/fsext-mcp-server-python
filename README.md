@@ -114,7 +114,7 @@ Only single unified bidirectional entry point, no separate /sse or /messages rou
 - Transport type: Streamable HTTP
 - Connection address fill: `http://127.0.0.1:8000/mcp`
 
-#### Key Differences between SSE Transport & Streamable HTTP Transport
+#### 5\. Key Differences between SSE Transport & Streamable HTTP Transport
 
 | Feature | SSE (HTTP+SSE) | Streamable HTTP |
 | --- | --- | --- |
