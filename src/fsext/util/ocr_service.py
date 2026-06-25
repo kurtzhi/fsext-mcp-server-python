@@ -69,7 +69,7 @@ def extract_text(
         os.environ["TESSDATA_PREFIX"] = str(tessdata_dir)
 
     # Override tesseract binary path for pytesseract runtime
-    pytesseract.pytesseract.tesseract_cmd = str(tesseract_cmd_file)
+    pytesseract.pytesseract.tesseract_cmd = str(tesseract_cmd_file)  # type: ignore
 
     with Image.open(input_file) as img:
         text = pytesseract.image_to_string(img, lang=lang, config=custom_config)

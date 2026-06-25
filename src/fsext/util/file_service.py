@@ -52,7 +52,7 @@ class FileInfo(NamedTuple):
     encoding: str | None
 
 
-def get_file_mime_type(image_path: str) -> str:
+def get_file_mime_type(image_path: str) -> str | None:
     """
     Gets the MIME type of image file via mimetypes guessing.
     Note: Guess only based on filename suffix, does not verify real image binary header.

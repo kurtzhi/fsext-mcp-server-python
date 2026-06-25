@@ -114,7 +114,7 @@ def search_in_files_by_content(
         lines_before: int,
         lines_after: int,
         file_extension: Optional[str] = "",
-        charset: str = "utf-8",
+        charset: Optional[str] = "utf-8",
 ) -> List[FileSearchResult]:
     """
     Performs a deep content search across multiple files.
@@ -226,7 +226,7 @@ def _grep_file(
         limit: int,
         lines_before: int,
         lines_after: int,
-        charset: str,
+        charset: Optional[str] = "utf-8",
 ):
     """
     Internal line stream processor, maintains sliding window buffer for context lines.

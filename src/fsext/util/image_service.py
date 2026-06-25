@@ -23,6 +23,7 @@ All file path arguments are validated via unified check_utils utilities.
 from pathlib import Path
 
 from PIL import Image
+from PIL.Image import Resampling
 
 from .file_service import get_file_extension
 from .check_utils import (
@@ -71,7 +72,7 @@ def resize(
             img.thumbnail((target_width, target_height))
             actual_width, actual_height = img.size
         else:
-            img = img.resize((target_width, target_height), Image.LANCZOS)
+            img = img.resize((target_width, target_height), resample=Resampling.LANCZOS)
             actual_width, actual_height = target_width, target_height
 
         if pad_to_target:
@@ -154,5 +155,5 @@ def rotate_image(
 
     with Image.open(input_file) as source:
         # expand=True auto enlarge canvas to hold full rotated content, BICUBIC for smooth resample
-        rotated_image = source.rotate(-degrees, expand=True, resample=Image.BICUBIC)
+        rotated_image = source.rotate(-degrees, expand=True, resample=Resampling.BICUBIC)
         rotated_image.save(fp=output_file)

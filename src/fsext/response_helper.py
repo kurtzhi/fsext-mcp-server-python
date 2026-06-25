@@ -62,6 +62,7 @@ def response_helper(func: Callable) -> Callable:
     - Wrap raw business output to unified MCP response dict
     - Log full stack trace internally, expose minimal clean error to client
     """
+
     @wraps(func)
     async def wrapper(**kwargs) -> dict:
         try:
@@ -71,7 +72,8 @@ def response_helper(func: Callable) -> Callable:
         # Workspace sandbox restriction
         except WorkspaceEscapeError as err:
             msg = str(err)
-            logger.warning(f"[TOOL:{func.__name__}] Workspace escape blocked: {msg}", exc_info=False)
+            logger.warning(f"[TOOL:{getattr(func, '__name__', repr(func))}] Workspace escape blocked: {msg}",
+                           exc_info=False)
             return build_response(
                 success=False,
                 info={
@@ -83,7 +85,8 @@ def response_helper(func: Callable) -> Callable:
         # Input & path validation error
         except ValueError as err:
             msg = str(err)
-            logger.warning(f"[TOOL:{func.__name__}] Parameter validation failed: {msg}", exc_info=True)
+            logger.warning(f"[TOOL:{getattr(func, '__name__', repr(func))}] Parameter validation failed: {msg}",
+                           exc_info=True)
             return build_response(
                 success=False,
                 info={
@@ -95,7 +98,7 @@ def response_helper(func: Callable) -> Callable:
         # File access permission denied
         except PermissionError as err:
             msg = f"Permission denied: {err}"
-            logger.warning(f"[TOOL:{func.__name__}] Access forbidden: {msg}", exc_info=True)
+            logger.warning(f"[TOOL:{getattr(func, '__name__', repr(func))}] Access forbidden: {msg}", exc_info=True)
             return build_response(
                 success=False,
                 info={
@@ -107,7 +110,7 @@ def response_helper(func: Callable) -> Callable:
         # General filesystem IO error
         except OSError as err:
             msg = f"File system operation failed: {err}"
-            logger.error(f"[TOOL:{func.__name__}] IO exception: {msg}", exc_info=True)
+            logger.error(f"[TOOL:{getattr(func, '__name__', repr(func))}] IO exception: {msg}", exc_info=True)
             return build_response(
                 success=False,
                 info={
@@ -120,7 +123,7 @@ def response_helper(func: Callable) -> Callable:
         except Exception as err:
             err_cls = type(err).__name__
             msg = f"Internal runtime error: {err_cls}"
-            logger.error(f"[TOOL:{func.__name__}] Unhandled exception", exc_info=True)
+            logger.error(f"[TOOL:{getattr(func, '__name__', repr(func))}] Unhandled exception", exc_info=True)
             return build_response(
                 success=False,
                 info={
@@ -128,4 +131,5 @@ def response_helper(func: Callable) -> Callable:
                     "message": msg
                 }
             )
+
     return wrapper

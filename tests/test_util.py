@@ -37,8 +37,8 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, List
 
-from fsext_mcp_server.util import (file_replace_service, file_read_service, file_write_service,
-                                   image_service, dir_service, file_service, ocr_service, file_search_service)
+from src.fsext.util import (file_replace_service, file_read_service, file_write_service,
+                            image_service, dir_service, file_service, ocr_service, file_search_service)
 
 
 # ============================== GLOBAL TEST META ENUM ==============================
@@ -546,7 +546,8 @@ def demo_func():
             "isolated_temp_output_path": str(temp_bin_output),
             "batch_chunk_size": PARAM_CFG.BINARY_BATCH_READ_SIZE
         }
-        expect_rule = "Batch read all bytes, temp binary file generated, output SHA256 identical to read-only source asset"
+        expect_rule = ("Batch read all bytes, temp binary file generated, "
+                       "output SHA256 identical to read-only source asset")
         try:
             offset = 0
             total_bytes = 0
@@ -555,7 +556,7 @@ def demo_func():
                     str(read_only_bin_src), bytearray(PARAM_CFG.BINARY_BATCH_READ_SIZE), bytes_to_skip=offset
                 )
                 if read_len > 0:
-                    file_write_service.write_binary_file(str(temp_bin_output), buf, 0, read_len, offset > 0)
+                    file_write_service.write_binary_file(str(temp_bin_output), bytes(buf), 0, read_len, offset > 0)
                 total_bytes += read_len
                 if eof:
                     break
