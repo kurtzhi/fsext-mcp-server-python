@@ -3,7 +3,6 @@
 
 # Copyright 2026 https://github.com/kurtzhi/fsext-mcp-server-python
 #
-#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -22,7 +21,6 @@ All path arguments are validated via unified check_utils utilities.
 """
 import os
 import re
-import sys
 from collections import deque
 from pathlib import Path
 from typing import List, NamedTuple, Optional
@@ -30,7 +28,8 @@ from typing import List, NamedTuple, Optional
 from .check_utils import (
     require_non_blank,
     require_readable_file,
-    require_readable_directory
+    require_readable_directory,
+    MAX_INT
 )
 
 
@@ -50,7 +49,7 @@ def search_files_by_content(
         search_term: str,
         is_regex: bool = False,
         ignore_case: bool = True,
-        file_type: Optional[str] = "",
+        file_extension: Optional[str] = "",
         charset: Optional[str] = "utf-8",
 ) -> List[str]:
     """
@@ -58,7 +57,7 @@ def search_files_by_content(
 
     :param dir_path: The path to the target directory.
     :param recursive: If true, searches subdirectories recursively.
-    :param file_type: The file extension to filter by.
+    :param file_extension: The file extension to filter by.
     :param search_term: The text or regular expression to search for.
     :param is_regex: If true, treats the searchTerm as a regular expression.
     :param ignore_case: If true, performs case-insensitive matching.
@@ -70,7 +69,7 @@ def search_files_by_content(
     start_path = Path(dir_path)
     require_readable_directory(start_path, "dir_path")
 
-    type_filter = file_type and file_type.strip()
+    type_filter = file_extension and file_extension.strip()
     query = search_term
     flags = re.IGNORECASE if ignore_case else 0
 
@@ -108,9 +107,9 @@ def search_in_files_by_content(
         dir_path: str,
         recursive: bool,
         search_term: str,
+        limit: int,
         is_regex: bool,
         ignore_case: bool,
-        limit: int,
         lines_before: int,
         lines_after: int,
         file_extension: Optional[str] = "",
@@ -121,13 +120,13 @@ def search_in_files_by_content(
 
     :param dir_path: The path to the target directory.
     :param recursive: If true, searches subdirectories recursively.
-    :param file_extension: The file extension to filter by.
     :param search_term: The text or regular expression to search for.
+    :param limit: The maximum number of matching results to process.
     :param is_regex: If true, treats the searchTerm as a regular expression.
     :param ignore_case: If true, performs case-insensitive matching.
-    :param limit: The maximum number of matching results to process.
     :param lines_before: The number of context lines to include before the matched line.
     :param lines_after: The number of context lines to include after the matched line.
+    :param file_extension: The file extension to filter by.
     :param charset: The character set to use for reading files.
     :return: A list of FileSearchResult objects.
     :raises ValueError: dir_path blank, unreadable dir, limit<=0, lines_before/lines_after negative
@@ -209,7 +208,7 @@ def search_in_file_by_content(
         pattern,
         search_term,
         ignore_case,
-        sys.maxsize,
+        MAX_INT,
         lines_before,
         lines_after,
         charset,

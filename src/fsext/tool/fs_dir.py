@@ -3,7 +3,6 @@
 
 # Copyright 2026 https://github.com/kurtzhi/fsext-mcp-server-python
 #
-#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -21,10 +20,12 @@ Directory operation MCP tool module
 Provides tools for directory traversal, full directory copy and directory move.
 All tools enforce workspace access restriction to limit file system scope.
 """
+from typing import Optional
+
 from .._instance import mcp
 from ..path_restrict import restrict_workspace
 from ..response_helper import response_helper
-from ..util import (dir_service)
+from ..util import (dir)
 
 
 @mcp.tool()
@@ -33,11 +34,11 @@ from ..util import (dir_service)
 async def fs_list_directory(
         source_dir: str,
         recursive: bool,
-        file_only: bool,
-        file_extension: str = ""
+        only_files: bool,
+        file_extension: Optional[str] = ""
 ) -> dict:
     """Scan directory, return matched absolute path list."""
-    res = dir_service.list_directory(source_dir, recursive, file_only, file_extension)
+    res = dir.list_directory(source_dir, recursive, only_files, file_extension)
     return {"paths": res}
 
 
@@ -47,11 +48,11 @@ async def fs_list_directory(
 async def fs_copy_directory(
         source_dir: str,
         copy_dest_dir: str,
-        overwrite: bool
+        overwrite: Optional[bool] = False
 ) -> dict:
     """Copy full directory tree, overwrite controls existing target cleanup."""
-    dir_service.copy_directory(source_dir, copy_dest_dir, overwrite)
-    return {"success": True}
+    dir.copy_directory(source_dir, copy_dest_dir, overwrite)
+    return {}
 
 
 @mcp.tool()
@@ -59,8 +60,9 @@ async def fs_copy_directory(
 @restrict_workspace(path_argument_names=["source_dir", "dest_dir"])
 async def fs_move_directory(
         source_dir: str,
-        dest_dir: str
+        dest_dir: str,
+        overwrite: Optional[bool] = False
 ) -> dict:
     """Move directory, fail if destination exists."""
-    dir_service.move_directory(source_dir, dest_dir)
-    return {"success": True}
+    dir.move_directory(source_dir, dest_dir, overwrite)
+    return {}

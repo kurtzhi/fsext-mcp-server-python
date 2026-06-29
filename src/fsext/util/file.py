@@ -3,7 +3,6 @@
 
 # Copyright 2026 https://github.com/kurtzhi/fsext-mcp-server-python
 #
-#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -17,12 +16,12 @@
 # limitations under the License.
 
 """
-General file utility service, provides metadata query, extension extract, file copy/move operations.
+General file utility service, provides metadata query, file create/delete/copy/move operations.
 All path input validation uses unified check_utils utilities.
 """
 import os
 import shutil
-import mimetypes
+import hashlib
 from pathlib import Path
 from typing import NamedTuple
 
@@ -48,25 +47,24 @@ class FileInfo(NamedTuple):
     creation_millis: float
     last_modified_millis: float
     last_access_millis: float
-    mime_type: str | None
-    encoding: str | None
+    sha256_digest: str
 
 
-def get_file_mime_type(image_path: str) -> str | None:
+def get_file_hash_digest(file_path: str) -> str:
     """
-    Gets the MIME type of image file via mimetypes guessing.
-    Note: Guess only based on filename suffix, does not verify real image binary header.
-
-    :param image_path: The path to the image file.
-    :return: The MIME type string, returns None if type cannot be recognized.
-    :raises ValueError: image_path is blank string, or target is not a readable regular file
+    Generates a SHA-256 hash digest of a file at the given path.
+    :param file_path: Path to the target file.
+    :return: Lowercase hex string of sha256 digest
     """
-    require_non_blank(image_path, "image_path")
-    path = Path(image_path)
-    require_readable_file(path, "image_path")
+    file_p = Path(file_path)
+    sha256 = hashlib.sha256()
 
-    mime_type, _ = mimetypes.guess_type(path)
-    return mime_type
+    chunk_size = 65536
+    with open(file_p, "rb") as f:
+        while chunk := f.read(chunk_size):
+            sha256.update(chunk)
+
+    return sha256.hexdigest()
 
 
 def create_file(file_path: str, content: str = "", charset: str = "utf-8"):
@@ -74,6 +72,7 @@ def create_file(file_path: str, content: str = "", charset: str = "utf-8"):
     Create text file with given content, strict empty parameter guard.
     :param file_path: Target absolute/relative file path string
     :param content: Initial text content to write into new file
+    :param charset: Text file decode encoding
     :raises ValueError: If file_path is empty string or whitespace only
     """
     # Empty parameter validation
@@ -106,11 +105,12 @@ def delete_file(file_path: str):
     os.unlink(file_path)
 
 
-def get_file_info(file_path: str) -> FileInfo:
+def get_file_info(file_path: str, calc_digest: bool) -> FileInfo:
     """
     Retrieves full metadata information of target file or directory.
 
     :param file_path: The path to the target file or directory.
+    :param calc_digest: If calculate hash digest for the given file.
     :return: A FileInfo record containing the file's metadata.
     :raises ValueError: file_path is blank string, target path does not exist
     """
@@ -119,7 +119,6 @@ def get_file_info(file_path: str) -> FileInfo:
     require_path_exists(path, "file_path")
 
     stat = path.stat()
-    mime_type, encoding = mimetypes.guess_type(path) # ('application/x-tar', 'gzip')
 
     return FileInfo(
         absolute_path=str(path.resolve()),
@@ -132,8 +131,7 @@ def get_file_info(file_path: str) -> FileInfo:
         creation_millis=stat.st_ctime * 1000,
         last_modified_millis=stat.st_mtime * 1000,
         last_access_millis=stat.st_atime * 1000,
-        mime_type=mime_type,
-        encoding=encoding
+        sha256_digest=get_file_hash_digest(file_path) if calc_digest else ''
     )
 
 
@@ -157,7 +155,7 @@ def is_file_exists(filename: str) -> bool:
     """
     Check if target filesystem entry exists.
 
-    :param file: Path-like target to check existence.
+    :param filename: Path-like target to check existence.
     :return: True if entry exists, False otherwise.
     """
     require_non_blank(filename, "filename")

@@ -3,7 +3,6 @@
 
 # Copyright 2026 https://github.com/kurtzhi/fsext-mcp-server-python
 #
-#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -18,7 +17,6 @@
 
 """
 Cross-FS Module Integration Test Suite
-Standard: AWS/GCP Enterprise Integration Test Spec
 Core Improvements:
 1. Clear centralized test intent block at top of each case, no hidden operation logic
 2. All write/modify/search ops strictly target isolated post-move temp dir, unified resource anchor
@@ -37,8 +35,14 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, List
 
-from src.fsext.util import (file_replace_service, file_read_service, file_write_service,
-                            image_service, dir_service, file_service, ocr_service, file_search_service)
+from src.fsext.util.dir import *
+from src.fsext.util.file import *
+from src.fsext.util.file_read import *
+from src.fsext.util.file_write import *
+from src.fsext.util.file_search import *
+from src.fsext.util.file_replace import *
+from src.fsext.util.image import *
+from src.fsext.util.ocr import *
 
 
 # ============================== GLOBAL TEST META ENUM ==============================
@@ -178,9 +182,9 @@ class TestReportFormatter:
         progress_pct = round((self.executed_cases / self.total_cases) * 100, 2) if self.total_cases > 0 else 0
         bar_len = 30
         filled = int(bar_len * progress_pct / 100)
-        bar = "█" * filled + "-" * (bar_len - filled)
+        bar = "█" * filled + "=" * (bar_len - filled)
         print(
-            f"\n[PROGRESS] {self.executed_cases}/{self.total_cases} [{bar}] {progress_pct}% | PASS:{self.pass_count} FAIL:{self.fail_count}")
+            f"\n[PROGRESS] {self.executed_cases}/{self.total_cases} {bar} {progress_pct}% | PASS:{self.pass_count} FAIL:{self.fail_count}")
 
     def print_final_table_report(self):
         """Print enterprise standard table summary after all suite finished"""
@@ -315,16 +319,16 @@ def demo_func():
         )
         try:
             # Step1: Read-only scan source, zero write
-            file_list = dir_service.list_directory(
+            file_list = list_directory(
                 str(src_read_only_root),
                 recursive=True,
-                file_only=False,
+                only_files=False,
                 file_extension="py"
             )
             # Step2: Copy  source_dir to copy_dest_dir
-            dir_service.copy_directory(str(src_read_only_root), str(copy_interim_dir), True)
+            copy_directory(str(src_read_only_root), str(copy_interim_dir), True)
             # Step3: Move to unified post-move anchor (single convergence point for all downstream ops)
-            dir_service.move_directory(source_dir=str(copy_interim_dir), dest_dir=str(move_target_dir))
+            move_directory(source_dir=str(copy_interim_dir), dest_dir=str(move_target_dir))
 
             actual_summary = (
                 f"Scanned py file count: {len(file_list)} | "
@@ -375,15 +379,15 @@ def demo_func():
         expect_rule = "file_service can delete file, check existence, fetch info, copy and move file without exception"
         try:
             # Create file
-            file_write_service.write_text_file(str(create_target), "")
-            exists_after_create = file_service.is_file_exists(str(create_target))
-            stat_info = file_service.get_file_info(str(create_target))
-            file_service.copy_file(str(create_target), str(copy_target), True)
-            file_service.move_file(str(create_target), str(move_target), False)
-            file_service.move_file(str(copy_target), str(move_target), True)
-            exists_after_move = file_service.is_file_exists(str(move_target))
-            create_exists_after_move = file_service.is_file_exists(str(create_target))
-            exists_after_delete = file_service.delete_file(str(move_target))
+            write_text_file(str(create_target), "")
+            exists_after_create = is_file_exists(str(create_target))
+            stat_info = get_file_info(str(create_target), True)
+            copy_file(str(create_target), str(copy_target), True)
+            move_file(str(create_target), str(move_target), False)
+            move_file(str(copy_target), str(move_target), True)
+            exists_after_move = is_file_exists(str(move_target))
+            create_exists_after_move = is_file_exists(str(create_target))
+            exists_after_delete = delete_file(str(move_target))
 
             actual_summary = (
                 f"File exists after creation: {exists_after_create} | "
@@ -431,9 +435,9 @@ def demo_func():
         copy_interim = case_workspace / "src_backup"
         scan_target_migrated_dir = self._get_post_move_target_dir(case_workspace)
 
-        dir_service.copy_directory(str(src_read_only_root), str(copy_interim), True)
+        copy_directory(str(src_read_only_root), str(copy_interim), True)
         shutil.copy2(str(self.search_demo_file), str(copy_interim / self.search_demo_file.name))
-        dir_service.move_directory(str(copy_interim), str(scan_target_migrated_dir))
+        move_directory(str(copy_interim), str(scan_target_migrated_dir))
 
         input_args = {
             "single_scan_target": str(scan_target_migrated_dir),
@@ -444,18 +448,18 @@ def demo_func():
         }
         expect_rule = "Return matched file list >0; extract 2 pre/post context lines for each hit inside migrated temp dir"
         try:
-            matched_files = file_search_service.search_files_by_content(
+            matched_files = search_files_by_content(
                 dir_path=str(scan_target_migrated_dir),
                 recursive=True,
                 search_term=PARAM_CFG.SEARCH_TARGET_KEYWORD,
                 is_regex=False,
                 ignore_case=False,
-                file_type=None,
+                file_extension=None,
                 charset=PARAM_CFG.CHARSET_STD
             )
             total_hits = 0
             for fp in matched_files:
-                ctx = file_search_service.search_in_file_by_content(
+                ctx = search_in_file_by_content(
                     fp, PARAM_CFG.SEARCH_TARGET_KEYWORD, False, False, 2, 2, PARAM_CFG.CHARSET_STD
                 )
                 total_hits += len(ctx)
@@ -492,7 +496,7 @@ def demo_func():
         case_id = "TEXT_001"
         start_ms = int(time.time() * 1000)
         case_workspace = self._create_case_isolation_dir(case_id)
-        read_only_src_file = ASSET_CFG.SOURCE_SRC_ROOT / "fsext" / "util" / "file_read_service.py"
+        read_only_src_file = ASSET_CFG.SOURCE_SRC_ROOT / "fsext" / "util" / "file_read.py"
         temp_write_output = case_workspace / "export_full_text.py"
 
         input_args = {
@@ -502,8 +506,8 @@ def demo_func():
         }
         expect_rule = "Read non-zero lines & content; temp write file generated; SHA256 hash fully consistent with read-only source"
         try:
-            line_cnt, content = file_read_service.read_text_file(str(read_only_src_file))
-            file_write_service.write_text_file(str(temp_write_output), content, append=False)
+            line_cnt, content = read_text_file(str(read_only_src_file))
+            write_text_file(str(temp_write_output), content, append=False)
             src_hash = compute_file_sha256(str(read_only_src_file))
             out_hash = compute_file_sha256(str(temp_write_output))
             actual_summary = f"Read lines: {line_cnt} | Source hash prefix: {src_hash[:16]} Temp output hash prefix: {out_hash[:16]}"
@@ -552,11 +556,11 @@ def demo_func():
             offset = 0
             total_bytes = 0
             while True:
-                buf, read_len, eof = file_read_service.read_binary_file(
+                buf, read_len, eof = read_binary_file(
                     str(read_only_bin_src), bytearray(PARAM_CFG.BINARY_BATCH_READ_SIZE), bytes_to_skip=offset
                 )
                 if read_len > 0:
-                    file_write_service.write_binary_file(str(temp_bin_output), bytes(buf), 0, read_len, offset > 0)
+                    write_binary_file(str(temp_bin_output), bytes(buf), 0, read_len, offset > 0)
                 total_bytes += read_len
                 if eof:
                     break
@@ -595,7 +599,7 @@ def demo_func():
         case_id = "REPLACE_SVC_008"
         start_ms = int(time.time() * 1000)
         case_workspace = self._create_case_isolation_dir(case_id)
-        test_file = case_workspace / "file_read_service.py"
+        test_file = case_workspace / "file_read.py"
         original_text = f"config = {{'limit': {PARAM_CFG.REPLACE_OLD_TOKEN}}}"
         input_args = {
             "target_file": str(test_file),
@@ -606,14 +610,14 @@ def demo_func():
         expect_rule = "file_replace_service fully replace all old_token occurrences with new_token inside target file"
         try:
             # Write origin content
-            file_write_service.write_text_file(str(test_file), original_text, append=False)
+            write_text_file(str(test_file), original_text, append=False)
             # Execute replace logic
-            file_replace_service.file_replace(
+            file_replace(
                 file_path=str(test_file),
                 search_term=PARAM_CFG.REPLACE_OLD_TOKEN,
                 replacement=PARAM_CFG.REPLACE_NEW_TOKEN
             )
-            _, modified_content = file_read_service.read_text_file(str(test_file))
+            _, modified_content = read_text_file(str(test_file))
             token_replaced = PARAM_CFG.REPLACE_OLD_TOKEN not in modified_content
             token_appeared = PARAM_CFG.REPLACE_NEW_TOKEN in modified_content
 
@@ -674,11 +678,11 @@ def demo_func():
         expect_rule = "Three processed image files generated inside isolated temp workspace, original static image untouched"
         try:
             self.assertTrue(Path(read_only_src_img).exists())
-            image_service.rotate_image(read_only_src_img, temp_rot, PARAM_CFG.ROTATE_ANGLE_DEG)
-            image_service.resize(read_only_src_img, temp_resize, True, False, PARAM_CFG.RESIZE_TARGET_W,
-                                 PARAM_CFG.RESIZE_TARGET_H)
-            image_service.crop(read_only_src_img, temp_crop, PARAM_CFG.CROP_START_X, PARAM_CFG.CROP_START_Y,
-                               PARAM_CFG.CROP_REGION_W, PARAM_CFG.CROP_REGION_H)
+            rotate_image(read_only_src_img, temp_rot, PARAM_CFG.ROTATE_ANGLE_DEG)
+            resize(read_only_src_img, temp_resize, PARAM_CFG.RESIZE_TARGET_W,
+                         PARAM_CFG.RESIZE_TARGET_H, True, False)
+            crop(read_only_src_img, temp_crop, PARAM_CFG.CROP_START_X, PARAM_CFG.CROP_START_Y,
+                       PARAM_CFG.CROP_REGION_W, PARAM_CFG.CROP_REGION_H)
             rot_exist = Path(temp_rot).exists()
             res_exist = Path(temp_resize).exists()
             crop_exist = Path(temp_crop).exists()
@@ -723,10 +727,10 @@ def demo_func():
         expect_rule = "English extract contains 'Giving Maintainers'; Chinese extract contains '冰山', no write to static image files"
         try:
             self.assertTrue(Path(ASSET_CFG.TESSDATA_STATIC_DIR).exists())
-            en_text = ocr_service.extract_text(str(ASSET_CFG.IMG_OCR_EN_PNG), ASSET_CFG.TESSERACT_BIN,
-                                               ASSET_CFG.LANG_ENG, ASSET_CFG.TESSDATA_STATIC_DIR)
-            cn_text = ocr_service.extract_text(str(ASSET_CFG.IMG_OCR_CN_PNG), ASSET_CFG.TESSERACT_BIN,
-                                               ASSET_CFG.LANG_CHI_SIM)
+            en_text = extract_text(str(ASSET_CFG.IMG_OCR_EN_PNG), ASSET_CFG.TESSERACT_BIN,
+                                       ASSET_CFG.TESSDATA_STATIC_DIR, ASSET_CFG.LANG_ENG)
+            cn_text = extract_text(str(ASSET_CFG.IMG_OCR_CN_PNG), ASSET_CFG.TESSERACT_BIN,
+                                       ASSET_CFG.TESSDATA_STATIC_DIR, ASSET_CFG.LANG_CHI_SIM)
             actual_summary = f"EN snippet: {en_text[:70]} | CN snippet: {cn_text[:70]}"
             self.assertIn("Giving Maintainers", en_text)
             self.assertIn("冰山", cn_text)

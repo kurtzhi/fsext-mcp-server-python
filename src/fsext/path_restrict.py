@@ -3,7 +3,6 @@
 
 # Copyright 2026 https://github.com/kurtzhi/fsext-mcp-server-python
 #
-#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -40,11 +39,8 @@ def clean_path(raw_path: str) -> str:
     """
     if not raw_path:
         return ""
-    # 去除首尾空格
     stripped = raw_path.strip()
-    # Windows 反斜杠统一转为 /
     unix_style = stripped.replace("\\", "/")
-    # 合并连续多个斜杠
     while "//" in unix_style:
         unix_style = unix_style.replace("//", "/")
     return unix_style

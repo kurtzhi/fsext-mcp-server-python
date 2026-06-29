@@ -3,7 +3,6 @@
 
 # Copyright 2026 https://github.com/kurtzhi/fsext-mcp-server-python
 #
-#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -36,17 +35,17 @@ from .check_utils import (
 
 def extract_text(
         image_path: str,
-        tesseract_cmd_path: str,
-        lang: str,
+        tesseract_bin_path: str = "",
         tessdata_path: str = "",
+        lang: str = "eng",
 ) -> str:
     """
     Extract text content from image file using Tesseract OCR engine.
 
     :param image_path: The path to the source image file.
-    :param tesseract_cmd_path: Full path of Tesseract executable binary.
-    :param lang: OCR language code (e.g. "eng", "chi_sim")
+    :param tesseract_bin_path: Full path of Tesseract executable binary.
     :param tessdata_path: Optional directory path for Tesseract language data files.
+    :param lang: OCR language code (e.g. "eng", "chi_sim").
     :return: Raw plain text extracted from image.
     :raises ValueError: Mandatory argument blank; target path not readable file/directory
     """
@@ -54,9 +53,9 @@ def extract_text(
     input_file = Path(image_path)
     require_readable_file(input_file, "image")
 
-    require_non_blank(tesseract_cmd_path, "tesseract_cmd_path")
-    tesseract_cmd_file = Path(tesseract_cmd_path)
-    require_readable_file(tesseract_cmd_file, "tesseract_cmd_path")
+    require_non_blank(tesseract_bin_path, "tesseract_bin_path")
+    tesseract_bin_file = Path(tesseract_bin_path)
+    require_readable_file(tesseract_bin_file, "tesseract_bin_path")
 
     require_non_blank(lang, "lang")
 
@@ -69,7 +68,7 @@ def extract_text(
         os.environ["TESSDATA_PREFIX"] = str(tessdata_dir)
 
     # Override tesseract binary path for pytesseract runtime
-    pytesseract.pytesseract.tesseract_cmd = str(tesseract_cmd_file)  # type: ignore
+    pytesseract.pytesseract.tesseract_cmd = str(tesseract_bin_file)  # type: ignore
 
     with Image.open(input_file) as img:
         text = pytesseract.image_to_string(img, lang=lang, config=custom_config)

@@ -1,6 +1,0 @@
-uv sync --dev
-uv add --dev pytest
-uv run python -m pytest --version
-uv check --preview-features check
-uv run pytest -v
-# uv run python -m pytest -v

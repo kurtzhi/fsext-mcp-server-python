@@ -3,7 +3,6 @@
 
 # Copyright 2026 https://github.com/kurtzhi/fsext-mcp-server-python
 #
-#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -35,7 +34,7 @@ from .check_utils import (
 def list_directory(
         source_dir: str,
         recursive: bool,
-        file_only: bool,
+        only_files: bool,
         file_extension: str = "",
 ) -> List[str]:
     """
@@ -43,7 +42,7 @@ def list_directory(
 
     :param source_dir: Raw string path of target scan directory
     :param recursive: True to traverse all subdirectories recursively; False for shallow scan only
-    :param file_only: True to skip directory entries, collect regular files only
+    :param only_files: True to skip directory entries, collect regular files only
     :param file_extension: Case-insensitive file extension filter; blank means no filter
     :return: List of absolute resolved path strings for matched filesystem entries
     :raises ValueError: If source_dir input string is empty or whitespace-only
@@ -62,7 +61,7 @@ def list_directory(
     if recursive:
         for root, _, file_names in os.walk(start_path):
             root_abs = str(Path(root).resolve())
-            if not file_only:
+            if not only_files:
                 paths.append(root_abs)
 
             for fname in file_names:
@@ -74,7 +73,7 @@ def list_directory(
             is_file = entry.is_file()
             entry_abs = str(entry.resolve())
 
-            if file_only and not is_file:
+            if only_files and not is_file:
                 continue
 
             match = True
@@ -114,13 +113,14 @@ def copy_directory(source_dir: str, copy_dest_dir: str, overwrite: bool):
         raise IOError(f"Destination directory '{copy_dest_dir}' already exists, overwrite is disabled")
 
 
-def move_directory(source_dir: str, dest_dir: str):
+def move_directory(source_dir: str, dest_dir: str, overwrite: bool = False):
     """
     Move entire source directory tree to target destination path.
     Will abort and throw error if destination already exists, no overwriting.
 
     :param source_dir: Source directory raw string path
     :param dest_dir: Target destination directory raw string path
+    :param overwrite: Whether to overwrite existing destination directory, default False
     :raises ValueError: If source_dir or dest_dir input string is empty/whitespace-only
     :raises IOError: Source dir unreadable, destination parent not writable or not a directory
     """
@@ -133,15 +133,17 @@ def move_directory(source_dir: str, dest_dir: str):
     require_writable_parent_directory(target, "dest_dir")
 
     if target.exists():
-        raise IOError(f"Destination path '{dest_dir}' already exists, move aborted")
+        if overwrite:
+            shutil.rmtree(target)
+        else:
+            raise IOError(f"Destination path '{dest_dir}' already exists, move aborted")
 
     shutil.move(source, target)
 
-    # if move operation done without exception
     if source.exists():
         try:
             shutil.rmtree(source)
         except OSError as e:
-            raise OSError(
+            raise IOError(
                 f"Move succeeded but failed to delete leftover source directory '{source_dir}': {str(e)}"
             ) from e

@@ -3,7 +3,6 @@
 
 # Copyright 2026 https://github.com/kurtzhi/fsext-mcp-server-python
 #
-#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -24,8 +23,10 @@ import os
 from pathlib import Path
 from typing import Union
 
-
 PathLike = Union[str, bytes, os.PathLike, Path]
+
+MAX_INT = 2147483647
+
 
 def require_non_blank(s: str, name: str):
     """

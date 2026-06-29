@@ -3,7 +3,6 @@
 
 # Copyright 2026 https://github.com/kurtzhi/fsext-mcp-server-python
 #
-#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -17,17 +16,17 @@
 # limitations under the License.
 
 """
-Utility methods for high-performance file reading, supports text line range and binary partial read.
+Utility methods for file reading, supports text line range and binary partial read.
 All file path arguments are validated via unified check_utils utilities.
 """
-import sys
 from io import UnsupportedOperation
 from pathlib import Path
 from typing import NamedTuple, Optional
 
 from .check_utils import (
     require_non_blank,
-    require_readable_file
+    require_readable_file,
+    MAX_INT
 )
 
 
@@ -35,7 +34,7 @@ class ReadResultString(NamedTuple):
     """
     Text file read result container.
     """
-    n_lines: int
+    lines_count: int
     content: str
 
 
@@ -56,7 +55,7 @@ def read_text_file(file_path: str, charset: str = "utf-8") -> ReadResultString:
     :param charset: Text decode character encoding
     :return: ReadResultString with total line count and full file content
     """
-    return read_text_file_range(file_path, -1, -1, "\n", charset)
+    return read_text_file_range(file_path, 0, MAX_INT, "\n", charset)
 
 
 def read_text_file_range(
@@ -83,12 +82,13 @@ def read_text_file_range(
     p = Path(file_path)
     require_readable_file(p, "file_path")
 
+    skip = max(lines_to_skip, 0)
+    max_lines = max_lines_to_read if max_lines_to_read > 0 else MAX_INT
+
     lines = []
     lines_count = 0
 
     with open(p, "r", encoding=charset) as f:
-        max_lines = max_lines_to_read if max_lines_to_read > 0 else sys.maxsize
-        skip = max(lines_to_skip, 0)
 
         for i, line in enumerate(f):
             if i >= skip:
@@ -124,11 +124,14 @@ def read_binary_file(
     p = Path(file_path)
     require_readable_file(p, "file_path")
 
+    given_buffer_len = len(buffer) if buffer is not None else 0
+    if buffer and (given_buffer_len == 0 or given_buffer_len < max_bytes_to_read):
+        raise ValueError(f"max_bytes_to_read must be > 0, and buffer length must be >= maxBytesToRead. got "
+                         f"max_bytes_to_read = '{max_bytes_to_read}', buffer.length = '{given_buffer_len}'")
+
     file_size = p.stat().st_size
     skip = max(bytes_to_skip, 0)
-    max_bytes_to_read = max_bytes_to_read if max_bytes_to_read > 0 else (
-        len(buffer) if buffer is not None else 0
-    )
+    max_bytes_to_read = max_bytes_to_read if max_bytes_to_read > 0 else given_buffer_len
 
     if skip >= file_size:
         return ReadResultBytes(bytearray(), 0, True)

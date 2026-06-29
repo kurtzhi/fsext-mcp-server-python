@@ -3,7 +3,6 @@
 
 # Copyright 2026 https://github.com/kurtzhi/fsext-mcp-server-python
 #
-#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -30,14 +29,14 @@ import uvicorn
 
 from . import path_restrict
 from ._instance import mcp
-from .tool.fs_dir import (fs_copy_directory, fs_list_directory, fs_move_directory)
-from .tool.fs_img import (fs_image_crop, fs_image_resize, fs_image_rotate, ocr_service)
+from .tool.fs_dir import (fs_list_directory, fs_copy_directory, fs_move_directory)
 from .tool.fs_base import (fs_create_file, fs_delete_file, fs_copy_file,
                            fs_move_file, fs_is_file_exists, fs_get_file_info)
 from .tool.fs_read_write import (fs_read_full_text, fs_read_text_range,
                                  fs_read_binary_chunk, fs_write_text, fs_write_binary)
-from .tool.fs_search_replace import (fs_search_in_file_by_content, fs_search_files_by_content,
-                                     fs_search_in_files_by_content, fs_file_replace)
+from .tool.fs_search_replace import (fs_search_files_by_content, fs_search_in_files_by_content,
+                                     fs_search_in_file_by_content, fs_file_replace)
+from .tool.fs_img import (fs_image_crop, fs_image_resize, fs_image_rotate, fs_ocr_extract_text)
 
 
 def main():

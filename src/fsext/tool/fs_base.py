@@ -3,7 +3,6 @@
 
 # Copyright 2026 https://github.com/kurtzhi/fsext-mcp-server-python
 #
-#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -17,15 +16,18 @@
 # limitations under the License.
 
 """
-File operation tool collection for fsext-mcp-server
+File operation tool collection
 Provides all basic single-file manipulation MCP tools, with workspace path access control.
 Covers file creation, deletion, metadata query, existence check, copy and move operations.
 All tools enforce workspace directory restriction to prevent unauthorized path access.
 """
+from typing import Optional
+
 from .._instance import mcp
 from ..path_restrict import restrict_workspace
 from ..response_helper import response_helper
-from ..util import (file_service)
+from ..util import (file)
+from .charset import Charset
 
 
 @mcp.tool()
@@ -33,12 +35,12 @@ from ..util import (file_service)
 @restrict_workspace(path_argument_names=["file_path"])
 async def fs_create_file(
         file_path: str,
-        content: str = "",
-        charset: str = "utf-8"
+        content: Optional[str] = "",
+        charset: Optional[Charset] = Charset.UTF8
 ) -> dict:
     """Create text file with initial content."""
-    file_service.create_file(file_path, content, charset)
-    return {"success": True}
+    file.create_file(file_path, content, charset)
+    return {}
 
 
 @mcp.tool()
@@ -48,18 +50,45 @@ async def fs_delete_file(
         file_path: str
 ) -> dict:
     """Delete single regular file, reject directory."""
-    file_service.delete_file(file_path)
-    return {"success": True}
+    file.delete_file(file_path)
+    return {}
+
+
+@mcp.tool()
+@response_helper
+@restrict_workspace(path_argument_names=["source_file_path", "dest_file_path"])
+async def fs_copy_file(
+        source_file_path: str,
+        dest_file_path: str,
+        overwrite: Optional[bool] = False
+) -> dict:
+    """Copy file with metadata, overwrite toggle."""
+    file.copy_file(source_file_path, dest_file_path, overwrite)
+    return {}
+
+
+@mcp.tool()
+@response_helper
+@restrict_workspace(path_argument_names=["source_file_path", "dest_file_path"])
+async def fs_move_file(
+        source_file_path: str,
+        dest_file_path: str,
+        overwrite: Optional[bool] = False
+) -> dict:
+    """Move file, control overwrite behavior."""
+    file.move_file(source_file_path, dest_file_path, overwrite)
+    return {}
 
 
 @mcp.tool()
 @response_helper
 @restrict_workspace(path_argument_names=["file_path"])
 async def fs_get_file_info(
-        file_path: str
+        file_path: str,
+        calc_digest: Optional[bool] = False
 ) -> dict:
     """Get full file/directory metadata."""
-    info: file_service.FileInfo = file_service.get_file_info(file_path)
+    info: file.FileInfo = file.get_file_info(file_path, calc_digest)
     return info._asdict()
 
 
@@ -70,31 +99,5 @@ async def fs_is_file_exists(
         file_path: str
 ) -> dict:
     """Check filesystem entry existence."""
-    exists = file_service.is_file_exists(file_path)
+    exists = file.is_file_exists(file_path)
     return {"exists": exists}
-
-
-@mcp.tool()
-@response_helper
-@restrict_workspace(path_argument_names=["source_file_path", "dest_file_path"])
-async def fs_copy_file(
-        source_file_path: str,
-        dest_file_path: str,
-        overwrite: bool
-) -> dict:
-    """Copy file with metadata, overwrite toggle."""
-    file_service.copy_file(source_file_path, dest_file_path, overwrite)
-    return {"success": True}
-
-
-@mcp.tool()
-@response_helper
-@restrict_workspace(path_argument_names=["source_file_path", "dest_file_path"])
-async def fs_move_file(
-        source_file_path: str,
-        dest_file_path: str,
-        overwrite: bool
-) -> dict:
-    """Move file, control overwrite behavior."""
-    file_service.move_file(source_file_path, dest_file_path, overwrite)
-    return {"success": True}
