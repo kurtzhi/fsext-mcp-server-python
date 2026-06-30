@@ -88,8 +88,11 @@ pip install fsext-mcp-server
 ### Launch commands after pip installation
 ```bash
 # Default stdio local mode
+fsext-mcp-server-py
 fsext-mcp-server
+
 # Short alias
+fsext-py
 fsext
 
 # Secure workspace locked mode
